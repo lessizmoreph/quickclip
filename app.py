@@ -18,7 +18,7 @@ import streamlit as st
 from tools.assemble.assemble import assemble_simple, make_thumbnail, ffmpeg_available
 
 ROOT = Path(__file__).resolve().parent
-SESSIONS = ROOT / "data" / "sessions"
+SESSIONS = Path("/tmp/quickclip/sessions")
 SESSIONS.mkdir(parents=True, exist_ok=True)
 LOGO = ROOT / "assets" / "logo.png"
 
