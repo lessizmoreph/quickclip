@@ -1,0 +1,20 @@
+[theme]
+base = "dark"
+primaryColor = "#0ea5e9"
+backgroundColor = "#07070b"
+secondaryBackgroundColor = "#0e0e15"
+textColor = "#ededf2"
+font = "sans serif"
+
+[server]
+headless = true
+runOnSave = true
+# Allow large video uploads. Default is only 200 MB.
+maxUploadSize = 3072
+maxMessageSize = 3072
+# Required behind Traefik — XSRF/CORS checks break multi-file uploads.
+enableCORS = false
+enableXsrfProtection = false
+
+[browser]
+gatherUsageStats = false

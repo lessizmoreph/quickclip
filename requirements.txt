@@ -1,0 +1,3 @@
+# QuickClip — minimal deps (FFmpeg engine needs only stdlib + Pillow)
+streamlit>=1.40
+pillow

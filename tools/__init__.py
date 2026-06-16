@@ -1,0 +1,1 @@
+"""QuickClip tools package."""
