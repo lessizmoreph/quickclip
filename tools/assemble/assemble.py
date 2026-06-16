@@ -226,15 +226,20 @@ def _fit_vf(width: int, height: int, blur_bg: bool) -> str:
             f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:black,fps=30,format=yuv420p,setsar=1")
 
 
-def _normalize_video(clip: str | Path, width: int, height: int, blur_bg: bool, out: Path) -> None:
-    _run(["ffmpeg", "-y", "-i", str(clip), "-vf", _fit_vf(width, height, blur_bg), "-an",
-          "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", str(out)])
+def _normalize_video(clip: str | Path, width: int, height: int, blur_bg: bool, out: Path, mute: bool = True) -> None:
+    audio_args = ["-an"] if mute else ["-c:a", "aac", "-b:a", "128k"]
+    _run(["ffmpeg", "-y", "-i", str(clip), "-vf", _fit_vf(width, height, blur_bg),
+          *audio_args, "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", str(out)])
 
 
-def _kenburns(image: str | Path, dur: float, width: int, height: int, out: Path) -> None:
+_KB_SPEEDS = {1: (0.0002, 1.08), 2: (0.0005, 1.12), 3: (0.0009, 1.18), 4: (0.0015, 1.25), 5: (0.002, 1.35)}
+
+
+def _kenburns(image: str | Path, dur: float, width: int, height: int, out: Path, speed: int = 3) -> None:
     frames = max(2, int(dur * 30))
+    rate, max_z = _KB_SPEEDS.get(speed, _KB_SPEEDS[3])
     vf = (f"scale={width*2}:{height*2}:force_original_aspect_ratio=increase,crop={width*2}:{height*2},"
-          f"zoompan=z='min(1+0.0009*on,1.18)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+          f"zoompan=z='min(1+{rate}*on,{max_z})':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
           f"s={width}x{height}:fps=30,format=yuv420p,setsar=1")
     _run(["ffmpeg", "-y", "-loop", "1", "-i", str(image), "-t", f"{dur:.2f}", "-vf", vf, "-an",
           "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", str(out)])
@@ -308,6 +313,8 @@ def assemble_simple(
     logo_pos: str = "bottom-right",
     overlay_text=None,
     text_pos: str = "bottom",
+    ken_burns_speed: int = 3,
+    mute_video_audio: bool = True,
 ) -> str:
     if not clip_paths:
         raise ValueError("No clips provided.")
@@ -331,11 +338,11 @@ def assemble_simple(
             seg = work / f"c{i:03d}.mp4"
             if _is_image(clip):
                 if ken_burns:
-                    _kenburns(clip, still_dur, width, height, seg)
+                    _kenburns(clip, still_dur, width, height, seg, speed=ken_burns_speed)
                 else:
                     _static_image(clip, still_dur, width, height, blur_bg, seg)
             else:
-                _normalize_video(clip, width, height, blur_bg, seg)
+                _normalize_video(clip, width, height, blur_bg, seg, mute=mute_video_audio)
             segs.append(seg)
         if end_text and end_text.strip():
             card(end_text.strip(), None, end_dur, "end")
